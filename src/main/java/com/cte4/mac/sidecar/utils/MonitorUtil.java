@@ -19,7 +19,6 @@ public class MonitorUtil {
      * @return
      */
     public static List<String[]> getRuntimeVMs(String matcher) {
-        // String component_pattern = "cte4";
         int selfPID = Integer.parseInt(ManagementFactory.getRuntimeMXBean().getName().split("@")[0]);
         List<String[]> targets = new ArrayList<String[]>();
         final Map<Integer, LocalVirtualMachine> vms = LocalVirtualMachine.getAllVirtualMachines();

@@ -83,7 +83,7 @@ public class AgentController {
                 .findFirst();
         if (find.isPresent()) {
             RuleEntity re = find.get();
-            te.applyRule(re);
+            te.addRule(re);
         }
     }
 

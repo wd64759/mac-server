@@ -56,8 +56,7 @@ public class MetricRepository {
     }
 
     private void initRules() {
-        RuleEntity re = new RuleEntity();
-        re.setName("JVMMetric");
+        RuleEntity re = new RuleEntity("JVMMetric");
         re.setDisabled(false);
         re.setVersion(1);
         // TODO: add monitoring script

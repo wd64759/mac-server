@@ -7,8 +7,11 @@ import java.util.Map;
 import java.util.Optional;
 
 import lombok.Data;
+import lombok.Getter;
+import lombok.ToString;
 
 @Data
+@ToString(exclude = {"attributes", "rules"})
 public class TargetEntity {
 
     public TargetEntity(String pid) throws IllegalArgumentException {
@@ -18,14 +21,16 @@ public class TargetEntity {
     private int pid;
     private String host;
     private long updated;
-    private boolean bootweaving = false;
+    private boolean bootweaving;
     private String agentPort;
     // pid, attached, uptime
+    @Getter
     private Map<String, String> attributes = new HashMap<String, String>();
     // rules applied
+    @Getter
     private List<RuleEntity> rules = new ArrayList<>();
 
-    public RuleEntity applyRule(RuleEntity re) {
+    public RuleEntity addRule(RuleEntity re) {
         Optional<RuleEntity> existing = rules.stream().filter(rule -> rule.getName().equals(re.getName())).findFirst();
         if (!existing.isPresent()) {
             rules.add(re);

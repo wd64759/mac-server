@@ -60,7 +60,8 @@ public class WeavingService {
     public boolean attachHelpers(@NonNull TargetEntity te, String jarLoc) throws HelperAttachException {
         try {
             Submit submit = Optional.ofNullable(getAgentHandler(te)).orElseThrow(()->new HelperAttachException(WARNING_AGENT_DOWN));
-            submit.addJarsToSystemClassloader(Arrays.asList(jarLoc));
+            String result = submit.addJarsToSystemClassloader(Arrays.asList(jarLoc));
+            log.info(String.format("Helper jar is attached, result:%s", result));
         } catch (Exception e) {
             log.error(String.format("fail to attach helper for %s", te));
             throw new HelperAttachException(e);
@@ -93,10 +94,13 @@ public class WeavingService {
      * @throws RuleInjectionException
      */
     public boolean applyRule(TargetEntity te, RuleEntity re) throws RuleInjectionException {
-        log.info(String.format("apply rule [target:%s], [rule:%s]", te, re));
+        log.info(String.format("apply rule [target:%s], [rule:%s]", te, re.getName()));
         try {
             Submit submit = Optional.ofNullable(getAgentHandler(te)).orElseThrow(()->new RuleInjectionException(WARNING_AGENT_DOWN));
-            submit.submitRequest(re.getScript());
+            ByteArrayInputStream is = new ByteArrayInputStream(re.getScript().getBytes());
+            String result = submit.addRulesFromResources(Arrays.asList(is));
+            te.addRule(re.clone());
+            log.info(String.format("rule applied, result:%s", result));
         } catch (Exception e) {
             log.error(String.format("fail to apply the rule for target:%s", te), e);
             throw new RuleInjectionException(e);
@@ -128,14 +132,16 @@ public class WeavingService {
      * @param re
      * @return
      */
-    public boolean detachRule(TargetEntity te, String[] specificRules) {
-        log.info(String.format("TODO: detach [target:%s], [rule:%s]", te, specificRules));
+    public boolean detachRule(TargetEntity te, String[] ruleNameArr) {
+        log.info(String.format("TODO: detach [target:%s], [rule:%s]", te, ruleNameArr));
         try {
             Submit submit = Optional.ofNullable(getAgentHandler(te)).orElseThrow(()->new RuleDetachException(WARNING_AGENT_DOWN));
-            List<RuleEntity> targetRules = te.getRules().stream().filter(rule->Arrays.stream(specificRules).anyMatch(t->t.equals(rule))).collect(Collectors.toList());
+            List<RuleEntity> targetRules = te.getRules().stream().filter(o->Arrays.stream(ruleNameArr).anyMatch(t->t == o.getName())).collect(Collectors.toList());
             for(RuleEntity re:targetRules) {
                 if(!re.isDisabled()) {
-                    submit.deleteRulesFromResources(Arrays.asList(new ByteArrayInputStream(re.getScript().getBytes())));
+                    String result = submit.deleteRulesFromResources(Arrays.asList(new ByteArrayInputStream(re.getScript().getBytes())));
+                    re.setDisabled(true);
+                    log.info(String.format("rule[%s] applied, result:%s", re.getName(), result));
                 }
             }
         } catch (Exception e) {
