@@ -1,0 +1,36 @@
+plugins {
+	id 'org.springframework.boot' version '2.4.3'
+	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+	id 'java'
+}
+
+group = 'com.cte4.mac.macagent'
+version = '0.0.1'
+sourceCompatibility = '1.8'
+
+allprojects {
+    repositories {
+        maven { url 'https://maven.aliyun.com/repository/public/' }
+		maven { url 'https://maven.aliyun.com/repository/spring/'}
+        mavenLocal()
+        mavenCentral()
+    }
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'io.prometheus:simpleclient_httpserver:0.10.0'
+	implementation 'io.springfox:springfox-swagger2:2.9.2'
+	implementation 'io.springfox:springfox-swagger-ui:2.9.2'
+	implementation 'org.projectlombok:lombok:1.16.18'
+	implementation 'org.jboss.byteman:byteman:4.0.13'
+	implementation 'org.jboss.byteman:byteman-install:4.0.13'
+	implementation 'org.jboss.byteman:byteman-submit:4.0.13'
+	
+	implementation files('/home/wei/jdk1.8.0_212/lib/jconsole.jar')
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+test {
+	useJUnitPlatform()
+}
