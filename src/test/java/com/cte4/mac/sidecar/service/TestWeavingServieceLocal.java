@@ -15,6 +15,20 @@ import lombok.extern.log4j.Log4j2;
 public class TestWeavingServieceLocal {
 
     public static void main(String[] args) throws Exception {
+        // please replace first 2 params before runing it
+        String pID = "29351";
+        String agentPort = "11400";
+        TargetEntity te = new TargetEntity(pID);
+        te.setAgentPort(agentPort);
+
+
+        WeavingService w = new WeavingService();
+        String jarLoc = "/mnt/d/code/e4/machelper/build/libs/machelper-0.0.1.jar";
+        w.attachHelpers(te, jarLoc);
+    }
+
+    static void testRuleApplyAndDetach() throws Exception {
+        // please replace first 2 params before runing it
         String pID = "9054";
         String agentPort = "11667";
         String ruleFile = "rulescripts/counter.btm";

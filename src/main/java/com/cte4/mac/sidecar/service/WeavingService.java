@@ -62,6 +62,8 @@ public class WeavingService {
             Submit submit = Optional.ofNullable(getAgentHandler(te)).orElseThrow(()->new HelperAttachException(WARNING_AGENT_DOWN));
             String result = submit.addJarsToSystemClassloader(Arrays.asList(jarLoc));
             log.info(String.format("Helper jar is attached, result:%s", result));
+            // List<String> jars = submit.getLoadedSystemClassloaderJars();
+            // jars.forEach(log::info);
         } catch (Exception e) {
             log.error(String.format("fail to attach helper for %s", te));
             throw new HelperAttachException(e);
