@@ -16,8 +16,8 @@ public class TestWeavingServieceLocal {
 
     public static void main(String[] args) throws Exception {
         // please replace first 2 params before runing it
-        String pID = "29351";
-        String agentPort = "11400";
+        String pID = "1651";
+        String agentPort = "11455";
         TargetEntity te = new TargetEntity(pID);
         te.setAgentPort(agentPort);
 
