@@ -24,9 +24,9 @@ public class SwaggerConfig {
 
     private ApiInfo apiInfo(){
         return new ApiInfoBuilder()
-                .title("MAC Agent Doc")
-                .description("This is a restful api document")
-                .version("0.0.1")
+                .title("MAC Agent Gateway")
+                .description("This is a restful api UI for debug")
+                .version("0.0.2")
                 .build();
     }    
 }

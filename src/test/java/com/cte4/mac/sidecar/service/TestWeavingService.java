@@ -1,18 +1,11 @@
 package com.cte4.mac.sidecar.service;
 
-import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import javax.management.monitor.Monitor;
 
 import com.cte4.mac.sidecar.model.TargetEntity;
 import com.cte4.mac.sidecar.repos.MetricRepository;
 import com.cte4.mac.sidecar.utils.MonitorUtil;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

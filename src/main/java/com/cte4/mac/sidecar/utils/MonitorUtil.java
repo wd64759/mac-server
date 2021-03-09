@@ -2,8 +2,12 @@ package com.cte4.mac.sidecar.utils;
 
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import org.springframework.util.DigestUtils;
 
 import lombok.extern.log4j.Log4j2;
 import sun.tools.jconsole.LocalVirtualMachine;
@@ -34,5 +38,26 @@ public class MonitorUtil {
             }
         }
         return targets;
+    }
+
+    /**
+     * get md5 sign for the given string
+     * @param str
+     * @return
+     */
+    public static String getMD5(String str) {
+        return DigestUtils.md5DigestAsHex(str.getBytes());
+    }
+
+    /**
+     * get sorted set
+     * @param keys
+     * @return
+     */
+    public static List<String> sortedKeys(Set<String> keys) {
+        List<String> orderedKeys = new ArrayList<>();
+        orderedKeys.addAll(keys);
+        Collections.sort(orderedKeys);
+        return orderedKeys;
     }
 }

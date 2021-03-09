@@ -26,6 +26,9 @@ dependencies {
 	implementation 'org.jboss.byteman:byteman:4.0.13'
 	implementation 'org.jboss.byteman:byteman-install:4.0.13'
 	implementation 'org.jboss.byteman:byteman-submit:4.0.13'
+	implementation 'javax.websocket:javax.websocket-api:1.1'
+	implementation 'org.springframework:spring-websocket:5.2.0.RELEASE'
+	implementation 'com.google.code.gson:gson:2.8.0'
 	
 	implementation files('/home/wei/jdk1.8.0_212/lib/jconsole.jar')
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
