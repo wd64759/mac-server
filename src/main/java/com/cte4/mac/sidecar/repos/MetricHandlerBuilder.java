@@ -16,7 +16,8 @@ public class MetricHandlerBuilder {
      */
     Map<String, MetricHandlerInterface> metersRegstry = new ConcurrentHashMap<>();
 
-    MetricHandlerBuilder() {
+    
+    public MetricHandlerBuilder() {
         metersRegstry.put(MeterEnum.COUNTER.name(), new DefaultCounterHandler());
         metersRegstry.put(MeterEnum.GAUGE.name(), new DefaultGaugeHandler());
     }

@@ -8,6 +8,10 @@ public class InvalidReqestException extends Exception {
         super();
     }
 
+    public InvalidReqestException(String message) {
+        super(message);
+    }
+
     public InvalidReqestException(Throwable cause) {
         super(cause);
     }

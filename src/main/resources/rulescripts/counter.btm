@@ -3,5 +3,5 @@ CLASS com.cte4.mic.appclient.controller.DemoController
 METHOD hello
 AT ENTRY
 IF true
-DO traceln("entering main")
+DO traceln("interrupted and do more ..")
 ENDRULE

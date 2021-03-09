@@ -4,10 +4,11 @@ import lombok.Data;
 
 @Data
 public class MetricReqEntity {
-    String meter;
-    String metric;
-    String attibutes;
-    String values;
-    long timestamp;
-    String context;
+    private String name;
+    private String meter;
+    private String metric;
+    private String attibutes;
+    private String values;
+    private long timestamp;
+    private String context;
 }

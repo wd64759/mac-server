@@ -15,9 +15,16 @@ import lombok.extern.log4j.Log4j2;
 public class TestWeavingServieceLocal {
 
     public static void main(String[] args) throws Exception {
+        String pID = "15366";
+        String agentPort = "11029";
+        testRuleApplyAndDetach(pID, agentPort);
+        // testDynamicWeavingHelpers(pID, agentPort);
+    }
+
+    public static void testDynamicWeavingHelpers(String processID, String port) throws Exception {
         // please replace first 2 params before runing it
-        String pID = "1651";
-        String agentPort = "11455";
+        String pID = processID;
+        String agentPort = port;
         TargetEntity te = new TargetEntity(pID);
         te.setAgentPort(agentPort);
 
@@ -27,10 +34,10 @@ public class TestWeavingServieceLocal {
         w.attachHelpers(te, jarLoc);
     }
 
-    static void testRuleApplyAndDetach() throws Exception {
+    static void testRuleApplyAndDetach(String processID, String port) throws Exception {
         // please replace first 2 params before runing it
-        String pID = "9054";
-        String agentPort = "11667";
+        String pID = processID;
+        String agentPort = port;
         String ruleFile = "rulescripts/counter.btm";
         String ruleScript = loadRuleScript(ruleFile);
 
@@ -43,6 +50,9 @@ public class TestWeavingServieceLocal {
         WeavingService w = new WeavingService();
         w.applyRule(te, re);
         te.getRules().stream().forEach(log::info);
+
+        System.out.println(">>> on-hold >>>");
+        System.in.read();
 
         String[] removeRules = {"TestRule"};
         w.detachRule(te, removeRules);
