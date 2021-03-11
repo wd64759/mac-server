@@ -1,13 +1,8 @@
 package com.cte4.mac.sidecar.service;
 
-import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Optional;
-
 import com.cte4.mac.sidecar.model.RuleEntity;
 import com.cte4.mac.sidecar.model.TargetEntity;
+import com.cte4.mac.sidecar.utils.MonitorUtil;
 
 import lombok.extern.log4j.Log4j2;
 
@@ -26,7 +21,7 @@ public class TestWeavingServieceLocal {
 
     static void applyRule(String ruleName, String processID, String agentPort) throws Exception {
         String ruleFile = String.format("rulescripts/%s.btm", ruleName);
-        String ruleScript = loadRuleScript(ruleFile);
+        String ruleScript = MonitorUtil.loadRuleScript(ruleFile);
         TargetEntity te = new TargetEntity(processID);
         te.setAgentPort(agentPort);
         RuleEntity re = new RuleEntity(ruleName);
@@ -42,7 +37,7 @@ public class TestWeavingServieceLocal {
         String ruleFile = String.format("rulescripts/%s.btm", ruleName);
         
         RuleEntity re = new RuleEntity(ruleName);
-        String ruleScript = loadRuleScript(ruleFile);
+        String ruleScript = MonitorUtil.loadRuleScript(ruleFile);
         re.setScript(ruleScript);
 
         TargetEntity te = new TargetEntity(processID);
@@ -72,7 +67,7 @@ public class TestWeavingServieceLocal {
         String pID = processID;
         String agentPort = port;
         String ruleFile = "rulescripts/counter.btm";
-        String ruleScript = loadRuleScript(ruleFile);
+        String ruleScript = MonitorUtil.loadRuleScript(ruleFile);
 
         TargetEntity te = new TargetEntity(pID);
         te.setAgentPort(agentPort);
@@ -90,17 +85,6 @@ public class TestWeavingServieceLocal {
         String[] removeRules = {"TestRule"};
         w.detachRule(te, removeRules);
         te.getRules().stream().forEach(log::info);
-    }
-
-    static String loadRuleScript(String ruleFile) {
-        String rule = "";
-        try {
-            URL floc = Optional.ofNullable(ClassLoader.getSystemResource(ruleFile)).orElseThrow(()->new IOException(String.format("unable to find the file:%s", ruleFile)));
-            rule = Files.readString(Paths.get(floc.toURI()));
-        } catch (Exception e) {
-            log.error(String.format("fail to load script from %s", ruleFile), e);
-        }
-        return rule;
     }
 
 }

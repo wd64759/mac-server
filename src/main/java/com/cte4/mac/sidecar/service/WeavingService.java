@@ -62,7 +62,7 @@ public class WeavingService {
         try {
             Submit submit = Optional.ofNullable(getAgentHandler(te)).orElseThrow(()->new HelperAttachException(WARNING_AGENT_DOWN));
             String result = submit.addJarsToSystemClassloader(Arrays.asList(jarLoc));
-            log.info(String.format("Helper jar is attached, result:%s", result));
+            log.info(String.format("MAC helpers are attached, result:%s", result));
             // List<String> jars = submit.getLoadedSystemClassloaderJars();
             // jars.forEach(log::info);
         } catch (Exception e) {

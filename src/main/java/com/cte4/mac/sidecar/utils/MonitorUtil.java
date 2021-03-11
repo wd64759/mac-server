@@ -1,10 +1,18 @@
 package com.cte4.mac.sidecar.utils;
 
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.util.DigestUtils;
@@ -59,5 +67,20 @@ public class MonitorUtil {
         orderedKeys.addAll(keys);
         Collections.sort(orderedKeys);
         return orderedKeys;
+    }
+
+    public static String loadRuleScript(String ruleFile) {
+        String rule = "";
+        try {
+            URL floc = Optional.ofNullable(ClassLoader.getSystemResource(ruleFile)).orElseThrow(()->new IOException(String.format("unable to find the file:%s", ruleFile)));
+            rule = Files.readString(Paths.get(floc.toURI()));
+        } catch (Exception e) {
+            log.error(String.format("fail to load script from %s", ruleFile), e);
+        }
+        return rule;
+    }
+
+    public static void main(String[] args) {
+
     }
 }

@@ -22,6 +22,7 @@ public class TargetEntity {
     private String host;
     private long updated;
     private boolean bootweaving;
+    private boolean disabled;
     private String agentPort;
     // pid, attached, uptime
     @Getter

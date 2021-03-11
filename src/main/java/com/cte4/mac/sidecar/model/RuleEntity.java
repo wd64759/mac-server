@@ -1,5 +1,7 @@
 package com.cte4.mac.sidecar.model;
 
+import com.google.gson.annotations.Expose;
+
 import lombok.Data;
 import lombok.ToString;
 import lombok.extern.log4j.Log4j2;
@@ -13,6 +15,8 @@ public class RuleEntity implements Cloneable {
     }
     private String name;
     private boolean disabled;
+
+    @Expose(serialize = false)
     private String script;
     private int version;
 

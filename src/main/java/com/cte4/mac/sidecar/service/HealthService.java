@@ -25,6 +25,8 @@ public class HealthService {
     private String wtMatcher;
     @Value("${watcher.interval}")
     private long wtInterval;
+    @Value("${agent.helper.jar}")
+    String helperLoc;
 
     @Autowired
     MetricRepository mRepo;
@@ -56,9 +58,15 @@ public class HealthService {
                     currentPID.removeAll(regPID);
                     if (!currentPID.isEmpty()) {
                         log.info("detect some new proc are up to monitor");
-                        for(String pID:currentPID) {
+                        for (String pID : currentPID) {
                             TargetEntity te = mRepo.getTarget(pID);
                             weaving.attachAgent(te);
+                            if (te.getAgentPort() != null) {
+                                weaving.attachHelpers(te, helperLoc);
+                            } else {
+                                log.warn("disable the agent for proc as it's unreachable:" + te);
+                                te.setDisabled(true);
+                            }
                         }
                     }
                     try {
