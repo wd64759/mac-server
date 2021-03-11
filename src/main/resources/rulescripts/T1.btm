@@ -1,0 +1,7 @@
+RULE check pre-loader
+CLASS com.cte4.mic.appclient.annotation.cargo.MacCargo
+METHOD process
+AT EXIT
+IF true
+DO com.cte4.mac.machelper.collectors.JVMCollector.start()
+ENDRULE

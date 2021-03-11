@@ -1,0 +1,9 @@
+RULE JVM
+CLASS com.cte4.mic.appclient.annotation.cargo.MacCargo
+METHOD process
+HELPER com.cte4.mac.machelper.JVMHelper
+AT ENTRY
+IF true
+DO debug("====");
+    enableMonitor();
+ENDRULE

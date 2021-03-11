@@ -16,6 +16,7 @@ import lombok.extern.log4j.Log4j2;
 public class ServiceTestHelper {
     public static void main(String[] args) throws Exception {
         VMInfo[] vms = Install.availableVMs();
+        
         Arrays.asList(vms).stream().forEach(log::info);
         // VirtualMachine vm = VirtualMachine.attach("2287");
         // log.info(props);

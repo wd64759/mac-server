@@ -40,8 +40,9 @@ public class WeavingService {
                     return;
                 }
                 int agentPort = findAvaliablePort();
-                Install.install(String.valueOf(te.getPid()), te.isBootweaving(), te.getHost(), agentPort,
-                        new String[] {});
+                // props:
+                String[] props = new String[]{};
+                Install.install(String.valueOf(te.getPid()), te.isBootweaving(), te.getHost(), agentPort, props);
                 te.setAgentPort(String.valueOf(agentPort));
                 log.info(String.format("attach the monitoring agent at port:%s, succssfully for target:%s", agentPort,
                         te));
@@ -135,7 +136,7 @@ public class WeavingService {
      * @return
      */
     public boolean detachRule(TargetEntity te, String[] ruleNameArr) {
-        log.info(String.format("TODO: detach [target:%s], [rule:%s]", te, ruleNameArr));
+        log.info(String.format("TODO: detach [target:%s], [rule:%s]", te, Arrays.asList(ruleNameArr)));
         try {
             Submit submit = Optional.ofNullable(getAgentHandler(te)).orElseThrow(()->new RuleDetachException(WARNING_AGENT_DOWN));
             List<RuleEntity> targetRules = te.getRules().stream().filter(o->Arrays.stream(ruleNameArr).anyMatch(t->t == o.getName())).collect(Collectors.toList());
