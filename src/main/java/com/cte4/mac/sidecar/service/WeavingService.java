@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import com.sun.tools.attach.*;
 
 import com.cte4.mac.sidecar.model.RuleEntity;
 import com.cte4.mac.sidecar.model.TargetEntity;
@@ -65,6 +66,26 @@ public class WeavingService {
             log.info(String.format("MAC helpers are attached, result:%s", result));
             // List<String> jars = submit.getLoadedSystemClassloaderJars();
             // jars.forEach(log::info);
+        } catch (Exception e) {
+            log.error(String.format("fail to attach helper for %s", te));
+            throw new HelperAttachException(e);
+        }
+        return true;
+    }
+
+    /**
+     * Attach helpers as agent model
+     * @param te
+     * @param jarLoc
+     * @return
+     * @throws HelperAttachException
+     */
+    public boolean attachHelpersAgent(@NonNull TargetEntity te, String jarLoc) throws HelperAttachException {
+        try {
+            log.info(String.format("attach %s with %s", te.getPid(), jarLoc));
+            VirtualMachine vm = VirtualMachine.attach(String.valueOf(te.getPid()));
+            vm.loadAgent(jarLoc);
+            vm.detach();
         } catch (Exception e) {
             log.error(String.format("fail to attach helper for %s", te));
             throw new HelperAttachException(e);

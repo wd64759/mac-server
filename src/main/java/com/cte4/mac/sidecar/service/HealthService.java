@@ -62,7 +62,8 @@ public class HealthService {
                             TargetEntity te = mRepo.getTarget(pID);
                             weaving.attachAgent(te);
                             if (te.getAgentPort() != null) {
-                                weaving.attachHelpers(te, helperLoc);
+                                // weaving.attachHelpers(te, helperLoc);
+                                weaving.attachHelpersAgent(te, helperLoc);
                             } else {
                                 log.warn("disable the agent for proc as it's unreachable:" + te);
                                 te.setDisabled(true);

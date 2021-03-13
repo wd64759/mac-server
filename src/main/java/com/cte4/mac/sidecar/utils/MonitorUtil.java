@@ -1,24 +1,21 @@
 package com.cte4.mac.sidecar.utils;
 
-import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import org.jboss.byteman.agent.install.Install;
+import org.jboss.byteman.agent.install.VMInfo;
 import org.springframework.util.DigestUtils;
 
 import lombok.extern.log4j.Log4j2;
-import sun.tools.jconsole.LocalVirtualMachine;
 
 @Log4j2
 public class MonitorUtil {
@@ -33,16 +30,15 @@ public class MonitorUtil {
     public static List<String[]> getRuntimeVMs(String matcher) {
         int selfPID = Integer.parseInt(ManagementFactory.getRuntimeMXBean().getName().split("@")[0]);
         List<String[]> targets = new ArrayList<String[]>();
-        final Map<Integer, LocalVirtualMachine> vms = LocalVirtualMachine.getAllVirtualMachines();
-        for (LocalVirtualMachine vm : vms.values()) {
-            // for (Entry<Integer, LocalVirtualMachine> vm : vms.entrySet()) {
-            if (vm.vmid() == selfPID) {
+
+        VMInfo[] vms = Install.availableVMs();
+        for(VMInfo vm: vms) {
+            if(Integer.parseInt(vm.getId()) == selfPID) {
                 continue;
             }
-            String entryClass = vm.displayName().toLowerCase();
-            if (entryClass.indexOf(matcher) != -1) {
-                targets.add(new String[] { String.valueOf(vm.vmid()), entryClass });
-                // log.info(String.format("VM runtime: %s:%s", vm.vmid(), entryClass));
+            String entryClass = vm.getDisplayName().toLowerCase();
+            if(entryClass.indexOf(matcher)!=-1) {
+                targets.add(new String[] {vm.getId(), entryClass});
             }
         }
         return targets;
@@ -81,6 +77,6 @@ public class MonitorUtil {
     }
 
     public static void main(String[] args) {
-
+        getRuntimeVMs("cte4");
     }
 }

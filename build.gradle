@@ -18,19 +18,20 @@ allprojects {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'io.prometheus:simpleclient_httpserver:0.10.0'
-	implementation 'io.springfox:springfox-swagger2:2.9.2'
-	implementation 'io.springfox:springfox-swagger-ui:2.9.2'
-	implementation 'org.projectlombok:lombok:1.16.18'
-	implementation 'org.jboss.byteman:byteman:4.0.13'
-	implementation 'org.jboss.byteman:byteman-install:4.0.13'
-	implementation 'org.jboss.byteman:byteman-submit:4.0.13'
-	implementation 'javax.websocket:javax.websocket-api:1.1'
-	implementation 'org.springframework:spring-websocket:5.2.0.RELEASE'
-	implementation 'com.google.code.gson:gson:2.8.0'
+	compile 'org.springframework.boot:spring-boot-starter-web'
+	compile 'io.prometheus:simpleclient_httpserver:0.10.0'
+	compile 'io.springfox:springfox-swagger2:2.9.2'
+	compile 'io.springfox:springfox-swagger-ui:2.9.2'
+	compile 'org.projectlombok:lombok:1.16.18'
+	compile 'org.jboss.byteman:byteman:4.0.13'
+	compile 'org.jboss.byteman:byteman-install:4.0.13'
+	compile 'org.jboss.byteman:byteman-submit:4.0.13'
+	compile 'javax.websocket:javax.websocket-api:1.1'
+	compile 'org.springframework:spring-websocket:5.2.0.RELEASE'
+	compile 'com.google.code.gson:gson:2.8.0'
 	
-	implementation files('/home/wei/jdk1.8.0_212/lib/jconsole.jar')
+	// implementation files('/home/wei/jdk1.8.0_212/lib/tools.jar')
+	// compile(files(((URLClassLoader) ToolProvider.getSystemToolClassLoader()).getURLs()))
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 

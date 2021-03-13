@@ -1,7 +1,7 @@
 RULE JVM
-CLASS com.cte4.mic.appclient.annotation.cargo.MacCargo
+CLASS com.cte4.mac.machelper.utils.MacCargo
 METHOD process
-HELPER com.cte4.mac.machelper.JVMHelper
+HELPER com.cte4.mac.machelper.helpers.JVMHelper
 AT ENTRY
 IF true
 DO debug("====");
