@@ -1,6 +1,7 @@
 package com.cte4.mac.sidecar.service;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,13 +14,14 @@ import javax.websocket.Session;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
+import com.cte4.mac.sidecar.exposer.MetricsCallback;
 import com.cte4.mac.sidecar.model.MeterEnum;
 import com.cte4.mac.sidecar.model.MetricEntity;
 import com.cte4.mac.sidecar.model.MetricReqEntity;
+import com.cte4.mac.sidecar.model.MetricsEntity;
 import com.cte4.mac.sidecar.repos.MetricHandlerBuilder;
 import com.google.gson.Gson;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.log4j.Log4j2;
@@ -29,15 +31,13 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class WebSocketFacade {
 
-    // @Autowired
-    MetricHandlerBuilder metricCallback = new MetricHandlerBuilder();
-
     private String agentID;
     private long onlineTS;
     private Session session;
 
     private static Gson gson = new Gson();
     private static Map<String, WebSocketFacade> clients = new ConcurrentHashMap<>();
+    private Map<String, MetricsCallback> listeners = new HashMap<>();
 
     @OnOpen
     public void onOpen(@PathParam("agent") String agentID, Session session) throws IOException {
@@ -48,13 +48,23 @@ public class WebSocketFacade {
         clients.put(agentID, this);
     }
 
+    public void sendMessage(String message) throws IOException {
+        session.getBasicRemote().sendText(message);
+    }
+
     @OnMessage
     public void onMessage(String message, Session session) throws IOException {
         log.info("message:" + message);
         try {
-            MetricReqEntity mr = gson.fromJson(message, MetricReqEntity.class);
-            MetricEntity me = validAndEnrich(mr);
-            metricCallback.getMetricHandler(me.getMeterType()).processMetric(me);
+            MetricsEntity me = gson.fromJson(message, MetricsEntity.class);
+            me = validAndEnrich(me);
+
+            for(Map.Entry<String, MetricsCallback> entry: listeners.entrySet()) {
+                MetricsCallback mcb = entry.getValue();
+                if(mcb.isAcceptable(me)) {
+                    mcb.callback(me);
+                }
+            }
         } catch (Exception e) {
             log.error("fail to process message from websocket", e);
             throw new IOException(e);
@@ -62,29 +72,13 @@ public class WebSocketFacade {
     }
 
     /**
-     * put some general fields as tags
+     * with more client informaiton we can put some generic tags
      * 
      * @param me
      * @throws InvalidReqestException
      */
-    private MetricEntity validAndEnrich(MetricReqEntity mr) throws InvalidReqestException {
-        Optional.ofNullable(mr.getMeter()).orElseThrow(() -> new InvalidReqestException());
-        MetricEntity me = new MetricEntity();
-        if (mr.getAttibutes() != null) {
-            String[] tagNameArr = mr.getAttibutes().split(",");
-            String[] tagValArr = mr.getValues().split(",");
-            if (tagNameArr.length != tagValArr.length) {
-                throw new InvalidReqestException("tags length is incorrect.");
-            }
-            for (int i = 0; i < tagNameArr.length; i++) {
-                me.getTags().put(tagNameArr[i], tagValArr[i]);
-            }
-        }
-        me.getTags().putIfAbsent("updatedTime",
-                Long.toString(me.getUpdated() == 0 ? System.currentTimeMillis() : me.getUpdated()));
-        me.setMeterType("counter".equalsIgnoreCase(mr.getMeter())?MeterEnum.COUNTER.name():MeterEnum.GAUGE.name());
-        me.setMetric(Long.valueOf(mr.getMetric()));
-        me.setRuleName(mr.getName());
+    private MetricsEntity validAndEnrich(MetricsEntity me) throws InvalidReqestException {
+        Optional.ofNullable(me.getMetrics()).orElseThrow(() -> new InvalidReqestException());
         return me;
     }
 
@@ -97,10 +91,38 @@ public class WebSocketFacade {
     @OnError
     public void onError(Session session, Throwable e) {
         log.info("get unexpected error", e);
-        try {
-            session.getBasicRemote().sendText("server error:" + e.getMessage());
-        } catch (IOException e1) {
+        // try {
+        // session.getBasicRemote().sendText("server error:" + e.getMessage());
+        // } catch (IOException e1) {
+        // }
+    }
+
+    /**
+     * Resgister message listener against specific agent
+     * @param agent
+     * @param callback
+     */
+    public static void addCallback(String agent, MetricsCallback callback) {
+        WebSocketFacade wsf = clients.get(agent);
+        if (wsf == null) {
+            log.info(String.format("ws for %s does not exist"), agent);
+            return;
         }
+        wsf.listeners.put(callback.getName(), callback);
+    }
+
+    /**
+     * Remove message listener by name
+     * @param agent
+     * @param callback
+     */
+    public static void removeCallback(String agent, MetricsCallback callback) {
+        WebSocketFacade wsf = clients.get(agent);
+        if (wsf == null) {
+            log.info(String.format("ws for %s does not exist"), agent);
+            return;
+        }
+        wsf.listeners.remove(callback.getName());
     }
 
     public long getDuration() {

@@ -12,6 +12,8 @@ import lombok.extern.log4j.Log4j2;
 public class RuleEntity implements Cloneable {
     public RuleEntity(String name) {
         this.name = name;
+        this.version = 1;
+        this.disabled = false;
     }
     private String name;
     private boolean disabled;

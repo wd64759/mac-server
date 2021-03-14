@@ -17,6 +17,7 @@ import com.cte4.mac.sidecar.model.RuleEntity;
 import com.cte4.mac.sidecar.model.TargetEntity;
 import com.cte4.mac.sidecar.utils.MonitorUtil;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.log4j.Log4j2;
@@ -24,6 +25,11 @@ import lombok.extern.log4j.Log4j2;
 @Component
 @Log4j2
 public class MetricRepository {
+
+    @Value("${rule.func.scripts}")
+    String RULE_FUNC_SCRIPTS;
+    @Value("${rule.std.supports}")
+    String RULE_STD_SUPPORTS;
 
     // All regristed rules
     Map<String, RuleEntity> rules = new ConcurrentHashMap<String, RuleEntity>();
@@ -65,7 +71,22 @@ public class MetricRepository {
     }
 
     private void initRules() {
-        URL loc = ClassLoader.getSystemResource("rulescripts/");
+        loadFunctionRules();
+        loadStdRules();
+    }
+
+    /**
+     * standard rule has no script
+     */
+    private void loadStdRules() {
+        for(String ruleName: RULE_FUNC_SCRIPTS.split(",")) {
+            RuleEntity re = new RuleEntity(ruleName);
+            rules.put(re.getName(), re);
+        }
+    }
+
+    private void loadFunctionRules() {
+        URL loc = ClassLoader.getSystemResource(RULE_FUNC_SCRIPTS);
         File folder = new File(loc.getPath());
         File[] files = folder.listFiles(new FilenameFilter() {
             @Override
@@ -77,8 +98,6 @@ public class MetricRepository {
             String fname = f.getName();
             String ruleName = (fname.substring(0,fname.lastIndexOf(".")));
             RuleEntity re = new RuleEntity(ruleName);
-            re.setDisabled(false);
-            re.setVersion(1);
             String ruleScript = String.format("rulescripts/%s.btm", ruleName);
             re.setScript(MonitorUtil.loadRuleScript(ruleScript));
             rules.put(re.getName(), re);

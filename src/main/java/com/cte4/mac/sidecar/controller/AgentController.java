@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
+import com.cte4.mac.sidecar.exposer.StandardMetricCollector;
 import com.cte4.mac.sidecar.model.MetricEntity;
 import com.cte4.mac.sidecar.model.RuleEntity;
 import com.cte4.mac.sidecar.model.TargetEntity;
@@ -12,6 +13,7 @@ import com.cte4.mac.sidecar.repos.MetricRepository;
 import com.cte4.mac.sidecar.service.AgentAttachException;
 import com.cte4.mac.sidecar.service.RuleInjectionException;
 import com.cte4.mac.sidecar.service.WeavingService;
+import com.cte4.mac.sidecar.service.WebSocketFacade;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -34,6 +36,12 @@ public class AgentController {
 
     @Autowired
     WeavingService weaving;
+
+    @Autowired
+    StandardMetricCollector stdCollector;
+
+    @Autowired
+    WebSocketFacade wsf;
 
     @ApiOperation(value = "list all rules", notes = "here is notes")
     @GetMapping(value = "/rules")
@@ -90,7 +98,15 @@ public class AgentController {
             re = te.addRule(re);
             if (re != null) {
                 try {
-                    weaving.applyRule(te, re);
+                    // weaving function rule 
+                    if (re.getScript() != null) {
+                        weaving.applyRule(te, re);
+                    } else {
+                        stdCollector.addStdRule(re.getName());
+                        // TODO: to figure out a right way
+                        wsf.addCallback(String.valueOf(te.getPid()), stdCollector);
+                    }
+
                 } catch (RuleInjectionException e) {
                     returnMsg = String.format("fail to apply rule:%s against target:%s, error:%s", rulename, target, e);
                 }
