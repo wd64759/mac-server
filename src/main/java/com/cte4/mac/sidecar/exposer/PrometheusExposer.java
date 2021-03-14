@@ -4,6 +4,7 @@ import java.net.InetSocketAddress;
 
 import javax.annotation.PostConstruct;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +18,11 @@ public class PrometheusExposer {
 	@Value("${exporter.httpserver}")
 	private int port;
 
+	@Autowired
+	private StandardMetricCollector smc;
+	@Autowired
+	private FunctionMetricCollector fc;
+
     @PostConstruct
     public void startService() {
 		InetSocketAddress socket = null;
@@ -27,13 +33,12 @@ public class PrometheusExposer {
 		} catch (Exception e) {
 			log.fatal(String.format("fail to bring up prometheus exporter server at {}", this.port));
 		}        
-		// DUMMY testing
-		dummyReg();
+		registerCollectors();
     }
 
-	private void dummyReg() {
-		TargetMetricCollector tm = new TargetMetricCollector();
-		tm.register();
+	private void registerCollectors() {
+		smc.register(CollectorRegistry.defaultRegistry);
+		fc.register();
 	}
 
 }
