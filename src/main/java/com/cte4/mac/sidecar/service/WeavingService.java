@@ -164,7 +164,7 @@ public class WeavingService {
             for(RuleEntity re:targetRules) {
                 if(!re.isDisabled()) {
                     String result = submit.deleteRulesFromResources(Arrays.asList(new ByteArrayInputStream(re.getScript().getBytes())));
-                    re.setDisabled(true);
+                    te.delRule(re);
                     log.info(String.format("rule[%s] applied, result:%s", re.getName(), result));
                 }
             }

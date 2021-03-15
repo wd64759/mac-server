@@ -96,20 +96,21 @@ public class AgentController {
             if (re != null) {
                 try {
                     String agentID = String.valueOf(te.getPid());
-                    // weaving function rule 
+                    // weaving function rule
                     // register ws listener as well as prometheus exposer
-                    if (re.getScript() != null) {
-                        weaving.applyRule(te, re);
+                    weaving.applyRule(te, re);
+                    if (re.getName().endsWith("FNC")) {
+                        log.info("::agent controller::apply function rule:" + rulename);
                         FunctionMetricCollector fcCollector = FunctionMetricCollector.getInstance(agentID);
-                        WebSocketFacade.registerListener(agentID, fcCollector);
                         fcCollector.register(pExposer.getRegistry());
-                    } else {
+                        WebSocketFacade.registerListener(agentID, fcCollector);
+                    } else if (re.getName().endsWith("STD")) {
+                        log.info("::agent controller::apply standard rule:" + rulename);
                         StandardMetricCollector stdCollector = StandardMetricCollector.getInstance(agentID);
-                        stdCollector.addStdRule(re.getName());
-                        WebSocketFacade.registerListener(agentID, stdCollector);
+                        stdCollector.addRule(re.getName());
                         stdCollector.register(pExposer.getRegistry());
-                    }
-
+                        WebSocketFacade.registerListener(agentID, stdCollector);
+                    } 
                 } catch (RuleInjectionException e) {
                     returnMsg = String.format("fail to apply rule:%s against target:%s, error:%s", rulename, target, e);
                 }
@@ -129,8 +130,13 @@ public class AgentController {
                 .findFirst();
         if (find.isPresent()) {
             RuleEntity re = find.get();
+            String agentID = String.valueOf(te.getPid());
             if (weaving.detachRule(te, new String[] { re.getName() })) {
-                te.delRule(re);
+                if (re.getName().endsWith("STD")) {
+                    log.info("::agent controller::detach rule:" + rulename);
+                    StandardMetricCollector stdCollector = StandardMetricCollector.getInstance(agentID);
+                    stdCollector.removeRule(re.getName());
+                } 
                 return "rule detached successfully";
             }
         }

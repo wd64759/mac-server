@@ -3,7 +3,6 @@ package com.cte4.mac.sidecar.repos;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +27,6 @@ public class MetricRepository {
 
     @Value("${rule.func.scripts}")
     String RULE_FUNC_SCRIPTS;
-    @Value("${rule.std.supports}")
-    String RULE_STD_SUPPORTS;
 
     // All regristed rules
     Map<String, RuleEntity> rules = new ConcurrentHashMap<String, RuleEntity>();
@@ -71,21 +68,6 @@ public class MetricRepository {
     }
 
     private void initRules() {
-        loadFunctionRules();
-        loadStdRules();
-    }
-
-    /**
-     * standard rule has no script
-     */
-    private void loadStdRules() {
-        for(String ruleName: RULE_FUNC_SCRIPTS.split(",")) {
-            RuleEntity re = new RuleEntity(ruleName);
-            rules.put(re.getName(), re);
-        }
-    }
-
-    private void loadFunctionRules() {
         URL loc = ClassLoader.getSystemResource(RULE_FUNC_SCRIPTS);
         File folder = new File(loc.getPath());
         File[] files = folder.listFiles(new FilenameFilter() {

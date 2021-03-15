@@ -49,30 +49,27 @@ public class StandardMetricCollector extends Collector implements MetricsCallbac
      */
     @Override
     public List<MetricFamilySamples> collect() {
-        // mfs values should retrive from the target service via WebSocket
-        // (I need to design some way to evaluate the request before sending it out )
-        // List<MetricFamilySamples> mfs = new ArrayList<MetricFamilySamples>();
-        // RuntimeMXBean runtimeBean = ManagementFactory.getRuntimeMXBean();
-        // mfs.add(new GaugeMetricFamily("demo_start_time_seconds", "Start time of the
-        // process since unix epoch in seconds.",
-        // runtimeBean.getStartTime() / MILLISECONDS_PER_SECOND));
-        // log.info("run TargetMetricCollector.collect()");
-        // return mfs;
-
-        log.info("::standard_collector::trigger collect(): - agentID:" + agentID);
-        if (stdRules.size() == 0) {
+        if (stdRules.size() == 0 && !stdMetricsBuf.isEmpty()) {
+            log.info("abandon metrics: " + stdMetricsBuf.size());
+            stdMetricsBuf.clear();
             return new ArrayList<>();
         }
-
-        reqToken.clear();
-        long startTime = System.currentTimeMillis();
+        // log.info("::metric-collector::standard::scan - send request for: " + agentID);
         WebSocketFacade wsf = WebSocketFacade.getSocketFacade(agentID);
+        if (wsf == null) {
+            log.info(String.format("::metric-collector::standard::skip - rules:%s, is_ws_ready:%s", stdRules.size(), wsf!=null));
+            return new ArrayList<>();
+        }
+        synchronized (reqToken) {
+            reqToken.clear();
+        }
+        long startTime = System.currentTimeMillis();
         for (String ruleName : stdRules) {
             CmdEntity ce = new CmdEntity();
             ce.setRuleName(ruleName);
             ce.setCmdType(CmdTypEnum.STD);
             try {
-                log.info("::standard_collector::send sync metrics request to target: - cmdEntity:" + ce);
+                // log.info("::standard_collector::send sync metrics request to target: - cmdEntity:" + ce);
                 wsf.sendMessage(gson.toJson(ce));
                 reqToken.add(ruleName);
             } catch (IOException e) {
@@ -88,7 +85,7 @@ public class StandardMetricCollector extends Collector implements MetricsCallbac
             }
         }
         long endTime = System.currentTimeMillis();
-        log.info(String.format("data collection completed: %s ms", (endTime - startTime)));
+        log.info(String.format("data collection completed. timecost: %s ms, metrics size: %s", (endTime - startTime), stdMetricsBuf.size()));
         return copyAndClean(stdMetricsBuf);
     }
 
@@ -103,8 +100,12 @@ public class StandardMetricCollector extends Collector implements MetricsCallbac
         return rsList;
     }
 
-    public void addStdRule(String rule) {
+    public void addRule(String rule) {
         stdRules.add(rule);
+    }
+
+    public void removeRule(String rule) {
+        stdRules.remove(rule);
     }
 
     /**
@@ -114,11 +115,16 @@ public class StandardMetricCollector extends Collector implements MetricsCallbac
      */
     @Override
     public void callback(MetricsEntity me) {
-        boolean reqMatched = reqToken.remove(me.getRuleName());
-        if (!reqMatched) {
-            log.info("unknown metrics - %s" + me);
+        stdMetricsBuf.addAll(me.getMetrics());
+        boolean goFlag = false;
+        synchronized (reqToken) {
+            reqToken.remove(me.getRuleName());
+            if (reqToken.isEmpty()) {
+                goFlag = true;
+            }
         }
-        if (reqToken.isEmpty()) {
+        if (goFlag) {
+            // log.info(String.format("data collection ack."));
             synchronized (stdMetricsBuf) {
                 stdMetricsBuf.notifyAll();
             }

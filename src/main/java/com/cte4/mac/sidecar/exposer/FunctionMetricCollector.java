@@ -9,10 +9,12 @@ import com.cte4.mac.sidecar.model.CmdTypEnum;
 import com.cte4.mac.sidecar.model.MetricsEntity;
 
 import io.prometheus.client.Collector;
+import lombok.extern.log4j.Log4j2;
 
 /**
  * Each agent has only ONE function data collector for function releated metrics
  */
+@Log4j2
 public class FunctionMetricCollector extends Collector implements MetricsCallback {
 
     private static Map<String, FunctionMetricCollector> fcRegisery = new ConcurrentHashMap<>();
@@ -46,6 +48,7 @@ public class FunctionMetricCollector extends Collector implements MetricsCallbac
     public List<MetricFamilySamples> collect() {
         List<MetricFamilySamples> rs = new ArrayList<>();
         if (buffer.size() > 0) {
+            log.info("::metric-collector::function::scan - buffer size: " + buffer.size());
             synchronized (buffer) {
                 rs.addAll(buffer);
                 buffer.clear();

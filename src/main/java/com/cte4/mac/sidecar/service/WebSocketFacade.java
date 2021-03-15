@@ -121,8 +121,15 @@ public class WebSocketFacade {
             }
         }
         // avoid dup
-        if (cbs.indexOf(callback) == -1) {
-            cbs.add(callback);
+        if (cbs.indexOf(callback) != -1) {
+            log.info(String.format("listner:%s is ALREADY registered for agent:%s", callback.getName(), agentID));
+        }
+        cbs.add(callback);
+
+        // manage the case when ws is up
+        WebSocketFacade wsf = clients.get(agentID);
+        if (wsf != null && wsf.listeners.indexOf(callback) == -1) {
+            wsf.listeners.add(callback);
         }
     }
 
@@ -132,17 +139,17 @@ public class WebSocketFacade {
      * @param agent
      * @param callback
      */
-    public static void removeCallback(String agent, MetricsCallback callback) {
+    public static void removeListener(String agent, MetricsCallback callback) {
+        List<MetricsCallback> reg = listenerRegistery.get(agent);
+        if (reg != null) {
+            reg.removeIf(listener -> listener.getName().equals(callback.getName()));
+        }
         WebSocketFacade wsf = clients.get(agent);
         if (wsf == null) {
             log.info(String.format("ws for %s does not exist"), agent);
             return;
         }
         wsf.listeners.removeIf(listener -> listener.getName().equals(callback.getName()));
-        List<MetricsCallback> reg = listenerRegistery.get(agent);
-        if (reg != null) {
-            reg.removeIf(listener -> listener.getName().equals(callback.getName()));
-        }
     }
 
     public long getDuration() {

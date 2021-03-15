@@ -42,7 +42,7 @@ public class TargetEntity {
 
     public RuleEntity delRule(RuleEntity re) {
         Optional<RuleEntity> existing = rules.stream().filter(rule -> rule.getName().equals(re.getName())).findFirst();
-        if (!existing.isPresent()) {
+        if (existing.isPresent()) {
             if (rules.remove(re))
                 return re;
         }
