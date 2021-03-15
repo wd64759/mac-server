@@ -1,7 +1,7 @@
 RULE JVM
 CLASS com.cte4.mac.machelper.utils.MacCargo
 METHOD process
-HELPER com.cte4.mac.machelper.helpers.JVMHelper
+HELPER com.cte4.mac.machelper.rules.standard.JvmStdHelper
 AT ENTRY
 IF true
 DO debug("====");

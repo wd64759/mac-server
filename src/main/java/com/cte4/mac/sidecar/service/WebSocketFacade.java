@@ -1,7 +1,9 @@
 package com.cte4.mac.sidecar.service;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -15,11 +17,7 @@ import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
 import com.cte4.mac.sidecar.exposer.MetricsCallback;
-import com.cte4.mac.sidecar.model.MeterEnum;
-import com.cte4.mac.sidecar.model.MetricEntity;
-import com.cte4.mac.sidecar.model.MetricReqEntity;
 import com.cte4.mac.sidecar.model.MetricsEntity;
-import com.cte4.mac.sidecar.repos.MetricHandlerBuilder;
 import com.google.gson.Gson;
 
 import org.springframework.stereotype.Component;
@@ -37,14 +35,18 @@ public class WebSocketFacade {
 
     private static Gson gson = new Gson();
     private static Map<String, WebSocketFacade> clients = new ConcurrentHashMap<>();
-    private Map<String, MetricsCallback> listeners = new HashMap<>();
+    private List<MetricsCallback> listeners = new ArrayList<>();
 
     @OnOpen
     public void onOpen(@PathParam("agent") String agentID, Session session) throws IOException {
-        log.info(String.format(">>>>>>  agent:%s is online", agentID));
+        log.info(String.format("::websockert::agent:%s online", agentID));
         this.agentID = agentID;
         this.onlineTS = System.currentTimeMillis();
         this.session = session;
+        List<MetricsCallback> cbs = listenerRegistery.get(agentID);
+        if (cbs != null && cbs.size() > 0) {
+            listeners.addAll(cbs);
+        }
         clients.put(agentID, this);
     }
 
@@ -58,10 +60,8 @@ public class WebSocketFacade {
         try {
             MetricsEntity me = gson.fromJson(message, MetricsEntity.class);
             me = validAndEnrich(me);
-
-            for(Map.Entry<String, MetricsCallback> entry: listeners.entrySet()) {
-                MetricsCallback mcb = entry.getValue();
-                if(mcb.isAcceptable(me)) {
+            for (MetricsCallback mcb : this.listeners) {
+                if (mcb.isAcceptable(me)) {
                     mcb.callback(me);
                 }
             }
@@ -84,7 +84,7 @@ public class WebSocketFacade {
 
     @OnClose
     public void onClose(Session session) throws IOException {
-        log.info(String.format(">>>>>>  agent:%s is offline, duration:%ss", agentID, this.getDuration() / 1000));
+        log.info(String.format("::websockert::agent:%s offline, duration:%ss", agentID, this.getDuration() / 1000));
         clients.remove(agentID);
     }
 
@@ -97,22 +97,38 @@ public class WebSocketFacade {
         // }
     }
 
+    private static Map<String, List<MetricsCallback>> listenerRegistery = new HashMap<>();
+
+    public static WebSocketFacade getSocketFacade(String agent) {
+        return clients.get(agent);
+    }
+
     /**
      * Resgister message listener against specific agent
+     * 
      * @param agent
      * @param callback
      */
-    public static void addCallback(String agent, MetricsCallback callback) {
-        WebSocketFacade wsf = clients.get(agent);
-        if (wsf == null) {
-            log.info(String.format("ws for %s does not exist"), agent);
-            return;
+    public static void registerListener(String agentID, MetricsCallback callback) {
+        List<MetricsCallback> cbs = listenerRegistery.get(agentID);
+        if (cbs == null) {
+            synchronized (listenerRegistery) {
+                cbs = listenerRegistery.get(agentID);
+                if (cbs == null) {
+                    cbs = new ArrayList<>();
+                    listenerRegistery.put(agentID, cbs);
+                }
+            }
         }
-        wsf.listeners.put(callback.getName(), callback);
+        // avoid dup
+        if (cbs.indexOf(callback) == -1) {
+            cbs.add(callback);
+        }
     }
 
     /**
      * Remove message listener by name
+     * 
      * @param agent
      * @param callback
      */
@@ -122,7 +138,11 @@ public class WebSocketFacade {
             log.info(String.format("ws for %s does not exist"), agent);
             return;
         }
-        wsf.listeners.remove(callback.getName());
+        wsf.listeners.removeIf(listener -> listener.getName().equals(callback.getName()));
+        List<MetricsCallback> reg = listenerRegistery.get(agent);
+        if (reg != null) {
+            reg.removeIf(listener -> listener.getName().equals(callback.getName()));
+        }
     }
 
     public long getDuration() {

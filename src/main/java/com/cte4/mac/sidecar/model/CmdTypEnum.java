@@ -6,5 +6,5 @@ package com.cte4.mac.sidecar.model;
  * DATA: request for metrics attrive
  */
 public enum CmdTypEnum {
-    SYS, DATA
+    SYS, FUNC, STD
 }

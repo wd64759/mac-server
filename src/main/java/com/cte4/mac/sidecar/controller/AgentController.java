@@ -2,11 +2,11 @@ package com.cte4.mac.sidecar.controller;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
+import com.cte4.mac.sidecar.exposer.FunctionMetricCollector;
+import com.cte4.mac.sidecar.exposer.PrometheusExposer;
 import com.cte4.mac.sidecar.exposer.StandardMetricCollector;
-import com.cte4.mac.sidecar.model.MetricEntity;
 import com.cte4.mac.sidecar.model.RuleEntity;
 import com.cte4.mac.sidecar.model.TargetEntity;
 import com.cte4.mac.sidecar.repos.MetricRepository;
@@ -38,10 +38,7 @@ public class AgentController {
     WeavingService weaving;
 
     @Autowired
-    StandardMetricCollector stdCollector;
-
-    @Autowired
-    WebSocketFacade wsf;
+    PrometheusExposer pExposer;
 
     @ApiOperation(value = "list all rules", notes = "here is notes")
     @GetMapping(value = "/rules")
@@ -98,13 +95,19 @@ public class AgentController {
             re = te.addRule(re);
             if (re != null) {
                 try {
+                    String agentID = String.valueOf(te.getPid());
                     // weaving function rule 
+                    // register ws listener as well as prometheus exposer
                     if (re.getScript() != null) {
                         weaving.applyRule(te, re);
+                        FunctionMetricCollector fcCollector = FunctionMetricCollector.getInstance(agentID);
+                        WebSocketFacade.registerListener(agentID, fcCollector);
+                        fcCollector.register(pExposer.getRegistry());
                     } else {
+                        StandardMetricCollector stdCollector = StandardMetricCollector.getInstance(agentID);
                         stdCollector.addStdRule(re.getName());
-                        // TODO: to figure out a right way
-                        wsf.addCallback(String.valueOf(te.getPid()), stdCollector);
+                        WebSocketFacade.registerListener(agentID, stdCollector);
+                        stdCollector.register(pExposer.getRegistry());
                     }
 
                 } catch (RuleInjectionException e) {
