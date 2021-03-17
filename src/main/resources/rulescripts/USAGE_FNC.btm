@@ -1,7 +1,18 @@
 RULE trace main entry
 CLASS com.cte4.mic.appclient.controller.DemoController
-METHOD hello
+METHOD sayHello
 AT ENTRY
-IF true
-DO traceln("interrupted and do more ..")
+IF TRUE
+DO createTimer($0)
+ENDRULE
+
+RULE trace main exit
+CLASS com.cte4.mic.appclient.controller.DemoController
+METHOD sayHello
+HELPER com.cte4.mac.machelper.rules.function.UsageFuncHelper
+AT EXIT
+BIND ts : long = getElapsedTimeFromTimer($0)
+IF TRUE
+DO sendMetrics($CLASS, $METHOD, ts);
+   deleteTimer($0)
 ENDRULE
