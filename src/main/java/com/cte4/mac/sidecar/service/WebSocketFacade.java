@@ -90,7 +90,7 @@ public class WebSocketFacade {
 
     @OnError
     public void onError(Session session, Throwable e) {
-        log.info("get unexpected error", e);
+        log.info("::ws-server::onError: ", e);
         // try {
         // session.getBasicRemote().sendText("server error:" + e.getMessage());
         // } catch (IOException e1) {
@@ -150,6 +150,21 @@ public class WebSocketFacade {
             return;
         }
         wsf.listeners.removeIf(listener -> listener.getName().equals(callback.getName()));
+    }
+
+    /**
+     * Clean up all listeners
+     * @param agent
+     */
+    public static void cleanListener(String agent) {
+        List<MetricsCallback> reg = listenerRegistery.get(agent);
+        if (reg != null) {
+            reg.clear();
+        }
+        WebSocketFacade wsf = clients.get(agent);
+        if (wsf != null) {
+            wsf.listeners.clear();
+        }
     }
 
     public long getDuration() {

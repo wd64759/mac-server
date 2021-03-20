@@ -1,0 +1,8 @@
+RULE MACHEALTH_FNC
+CLASS com.cte4.mac.machelper.utils.MacCargo
+METHOD process
+HELPER com.cte4.mac.machelper.rules.function.MacHealthHelper
+AT ENTRY
+IF true
+DO debug("activate MAC health check");
+ENDRULE

@@ -30,38 +30,51 @@ public class WeavingService {
 
     /**
      * Attach the monitoring agent
+     * 
      * @param te
      * @throws AgentAttachException
      */
-    public void attachAgent(TargetEntity te) throws AgentAttachException {
+    public boolean attachAgent(TargetEntity te) throws AgentAttachException {
+        boolean attachOps = false;
         try {
             if (te.getAgentPort() == null || te.getAgentPort().isBlank()) {
-                if(Install.isAgentAttached(String.valueOf(te.getPid()))) {
+                // this case only happened when side-car is bounced.
+                if (Install.isAgentAttached(String.valueOf(te.getPid()))) {
                     log.info(String.format("monitoring agent is already attached for target:%s", te));
-                    return;
+                    return attachOps;
                 }
                 int agentPort = findAvaliablePort();
-                // props:
-                String[] props = new String[]{};
-                Install.install(String.valueOf(te.getPid()), te.isBootweaving(), te.getHost(), agentPort, props);
                 te.setAgentPort(String.valueOf(agentPort));
+                te.setBootweaving(true);
+                // props:
+                String[] props = new String[] { "org.jboss.byteman.dump.generated.classes=true",
+                        "org.jboss.byteman.dump.generated.classes.directory=./dump",
+                        "org.jboss.byteman.mac.agentport=" + te.getAgentPort(),
+                        "org.jboss.byteman.mac.pid=" + te.getPid(), "org.jboss.byteman.debug",
+                        "org.jboss.byteman.verbose" };
+
+                Install.install(String.valueOf(te.getPid()), te.isBootweaving(), te.getHost(), agentPort, props);
                 log.info(String.format("attach the monitoring agent at port:%s, succssfully for target:%s", agentPort,
                         te));
+                attachOps = true;
             }
         } catch (Exception e) {
             log.error(String.format("fail to attach agent to the target process - PID:%s", te.getPid()), e);
             throw new AgentAttachException(e);
         }
+        return attachOps;
     }
 
     /**
      * Attach helpers jar
+     * 
      * @param te
      * @param jarLoc
      */
     public boolean attachHelpers(@NonNull TargetEntity te, String jarLoc) throws HelperAttachException {
         try {
-            Submit submit = Optional.ofNullable(getAgentHandler(te)).orElseThrow(()->new HelperAttachException(WARNING_AGENT_DOWN));
+            Submit submit = Optional.ofNullable(getAgentHandler(te))
+                    .orElseThrow(() -> new HelperAttachException(WARNING_AGENT_DOWN));
             String result = submit.addJarsToSystemClassloader(Arrays.asList(jarLoc));
             log.info(String.format("MAC helpers are attached, result:%s", result));
             // List<String> jars = submit.getLoadedSystemClassloaderJars();
@@ -74,7 +87,8 @@ public class WeavingService {
     }
 
     /**
-     * Attach helpers as agent model
+     * Attach helpers as agent model (cargo mode)
+     * 
      * @param te
      * @param jarLoc
      * @return
@@ -112,6 +126,7 @@ public class WeavingService {
 
     /**
      * Attach rule to target process
+     * 
      * @param te
      * @param re
      * @return
@@ -120,7 +135,8 @@ public class WeavingService {
     public boolean applyRule(TargetEntity te, RuleEntity re) throws RuleInjectionException {
         log.info(String.format("apply rule [target:%s], [rule:%s]", te, re.getName()));
         try {
-            Submit submit = Optional.ofNullable(getAgentHandler(te)).orElseThrow(()->new RuleInjectionException(WARNING_AGENT_DOWN));
+            Submit submit = Optional.ofNullable(getAgentHandler(te))
+                    .orElseThrow(() -> new RuleInjectionException(WARNING_AGENT_DOWN));
             ByteArrayInputStream is = new ByteArrayInputStream(re.getScript().getBytes());
             String result = submit.addRulesFromResources(Arrays.asList(is));
             te.addRule(re.clone());
@@ -134,6 +150,7 @@ public class WeavingService {
 
     /**
      * retrive the agent handler
+     * 
      * @param te
      * @return
      */
@@ -152,6 +169,7 @@ public class WeavingService {
 
     /**
      * Detach rules
+     * 
      * @param te
      * @param re
      * @return
@@ -159,11 +177,15 @@ public class WeavingService {
     public boolean detachRule(TargetEntity te, String[] ruleNameArr) {
         log.info(String.format("TODO: detach [target:%s], [rule:%s]", te, Arrays.asList(ruleNameArr)));
         try {
-            Submit submit = Optional.ofNullable(getAgentHandler(te)).orElseThrow(()->new RuleDetachException(WARNING_AGENT_DOWN));
-            List<RuleEntity> targetRules = te.getRules().stream().filter(o->Arrays.stream(ruleNameArr).anyMatch(t->t == o.getName())).collect(Collectors.toList());
-            for(RuleEntity re:targetRules) {
-                if(!re.isDisabled()) {
-                    String result = submit.deleteRulesFromResources(Arrays.asList(new ByteArrayInputStream(re.getScript().getBytes())));
+            Submit submit = Optional.ofNullable(getAgentHandler(te))
+                    .orElseThrow(() -> new RuleDetachException(WARNING_AGENT_DOWN));
+            List<RuleEntity> targetRules = te.getRules().stream()
+                    .filter(o -> Arrays.stream(ruleNameArr).anyMatch(t -> t == o.getName()))
+                    .collect(Collectors.toList());
+            for (RuleEntity re : targetRules) {
+                if (!re.isDisabled()) {
+                    String result = submit.deleteRulesFromResources(
+                            Arrays.asList(new ByteArrayInputStream(re.getScript().getBytes())));
                     te.delRule(re);
                     log.info(String.format("rule[%s] applied, result:%s", re.getName(), result));
                 }

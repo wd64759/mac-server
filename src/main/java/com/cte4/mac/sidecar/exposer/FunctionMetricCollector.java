@@ -43,6 +43,7 @@ public class FunctionMetricCollector extends Collector implements MetricsCallbac
      * temp repository before Promethues pull them
      */
     List<MetricFamilySamples> buffer = new ArrayList<>();
+    private int BUFFER_MAX = 10000;
 
     @Override
     public List<MetricFamilySamples> collect() {
@@ -65,7 +66,16 @@ public class FunctionMetricCollector extends Collector implements MetricsCallbac
     @Override
     public void callback(MetricsEntity cmdEntity) {
         synchronized (buffer) {
-            buffer.addAll(cmdEntity.getMetrics());
+            try {
+                if (buffer.size() >= BUFFER_MAX) {
+                    List<MetricFamilySamples> last100 = buffer.subList(buffer.size() - 101, buffer.size() - 1);
+                    buffer.clear();
+                    buffer.addAll(last100);
+                }
+                buffer.addAll(cmdEntity.getMetrics());              
+            } catch (Exception e) {
+                log.error("fail to add msg to collection buffer", e);
+            }
         }
     }
 

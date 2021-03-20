@@ -108,6 +108,10 @@ public class StandardMetricCollector extends Collector implements MetricsCallbac
         stdRules.remove(rule);
     }
 
+    public boolean isRuleEmpty() {
+        return stdRules.size() == 0;
+    }
+
     /**
      * watch against ws
      * 

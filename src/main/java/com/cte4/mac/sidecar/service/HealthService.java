@@ -7,9 +7,12 @@ import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 
+import com.cte4.mac.sidecar.exposer.MACHealthCollector;
+import com.cte4.mac.sidecar.model.RuleEntity;
 import com.cte4.mac.sidecar.model.TargetEntity;
 import com.cte4.mac.sidecar.repos.MetricRepository;
 import com.cte4.mac.sidecar.utils.MonitorUtil;
+import com.google.common.base.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,11 +30,15 @@ public class HealthService {
     private long wtInterval;
     @Value("${agent.helper.jar}")
     String helperLoc;
+    @Value("${rule.preinstall}")
+    String preRules;
 
     @Autowired
     MetricRepository mRepo;
     @Autowired
     WeavingService weaving;
+    @Autowired
+    MACHealthCollector mhc;
 
     @PostConstruct
     public void postInit() {
@@ -53,17 +60,29 @@ public class HealthService {
                     if (!lostPID.isEmpty()) {
                         log.info("detect few proc under-monitoring were down");
                         lostPID.forEach(mRepo::delTarget);
+                        lostPID.forEach(WebSocketFacade::cleanListener);
                     }
                     // add new PID into monitoring list
                     currentPID.removeAll(regPID);
                     if (!currentPID.isEmpty()) {
                         log.info("detect some new proc are up to monitor");
                         for (String pID : currentPID) {
-                            TargetEntity te = mRepo.getTarget(pID);
-                            weaving.attachAgent(te);
-                            if (te.getAgentPort() != null) {
+                            final TargetEntity te = mRepo.getTarget(pID);
+                            boolean validTarget = weaving.attachAgent(te);
+                            WebSocketFacade.registerListener(pID, mhc);
+                            if (validTarget && te.getAgentPort() != null) {
                                 // weaving.attachHelpers(te, helperLoc);
                                 weaving.attachHelpersAgent(te, helperLoc);
+                                List<RuleEntity> preinstalledRules = getPreRules(Arrays.asList(preRules.split(",")));
+                                if (preinstalledRules.size() > 0) {
+                                    preinstalledRules.forEach(t -> {
+                                        try {
+                                            weaving.applyRule(te, t);
+                                        } catch (RuleInjectionException e) {
+                                            log.error("fail to apply pre-install rule:" + t);
+                                        }
+                                    });
+                                }
                             } else {
                                 log.warn("disable the agent for proc as it's unreachable:" + te);
                                 te.setDisabled(true);
@@ -81,6 +100,12 @@ public class HealthService {
         });
         targetEyes.setDaemon(true);
         targetEyes.start();
+    }
+
+    private List<RuleEntity> getPreRules(List<String> ruleNames) {
+        List<RuleEntity> finds = mRepo.getRules().stream().filter(rule -> ruleNames.contains(rule.getName()))
+                .collect(Collectors.toList());
+        return finds;
     }
 
     public static void main(String[] args) {

@@ -136,6 +136,10 @@ public class AgentController {
                     log.info("::agent controller::detach rule:" + rulename);
                     StandardMetricCollector stdCollector = StandardMetricCollector.getInstance(agentID);
                     stdCollector.removeRule(re.getName());
+                    if(stdCollector.isRuleEmpty()) {
+                        log.info("::agent controller::remove listener:" + stdCollector.getName());
+                        WebSocketFacade.removeListener(agentID, stdCollector);
+                    }
                 } 
                 return "rule detached successfully";
             }

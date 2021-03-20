@@ -14,5 +14,6 @@ AT EXIT
 BIND ts : long = getElapsedTimeFromTimer($0)
 IF TRUE
 DO sendMetrics($CLASS, $METHOD, ts);
+   debug("==**==");
    deleteTimer($0)
 ENDRULE
