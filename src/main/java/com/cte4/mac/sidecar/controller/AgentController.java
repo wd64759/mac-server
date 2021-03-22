@@ -4,16 +4,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import com.cte4.mac.sidecar.exposer.FunctionMetricCollector;
-import com.cte4.mac.sidecar.exposer.PrometheusExposer;
-import com.cte4.mac.sidecar.exposer.StandardMetricCollector;
 import com.cte4.mac.sidecar.model.RuleEntity;
 import com.cte4.mac.sidecar.model.TargetEntity;
 import com.cte4.mac.sidecar.repos.MetricRepository;
 import com.cte4.mac.sidecar.service.AgentAttachException;
 import com.cte4.mac.sidecar.service.RuleInjectionException;
 import com.cte4.mac.sidecar.service.WeavingService;
-import com.cte4.mac.sidecar.service.WebSocketFacade;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -36,9 +32,6 @@ public class AgentController {
 
     @Autowired
     WeavingService weaving;
-
-    @Autowired
-    PrometheusExposer pExposer;
 
     @ApiOperation(value = "list all rules", notes = "here is notes")
     @GetMapping(value = "/rules")
@@ -95,22 +88,8 @@ public class AgentController {
             re = te.addRule(re);
             if (re != null) {
                 try {
-                    String agentID = String.valueOf(te.getPid());
                     // weaving function rule
-                    // register ws listener as well as prometheus exposer
                     weaving.applyRule(te, re);
-                    if (re.getName().endsWith("FNC")) {
-                        log.info("::agent controller::apply function rule:" + rulename);
-                        FunctionMetricCollector fcCollector = FunctionMetricCollector.getInstance(agentID);
-                        fcCollector.register(pExposer.getRegistry());
-                        WebSocketFacade.registerListener(agentID, fcCollector);
-                    } else if (re.getName().endsWith("STD")) {
-                        log.info("::agent controller::apply standard rule:" + rulename);
-                        StandardMetricCollector stdCollector = StandardMetricCollector.getInstance(agentID);
-                        stdCollector.addRule(re.getName());
-                        stdCollector.register(pExposer.getRegistry());
-                        WebSocketFacade.registerListener(agentID, stdCollector);
-                    } 
                 } catch (RuleInjectionException e) {
                     returnMsg = String.format("fail to apply rule:%s against target:%s, error:%s", rulename, target, e);
                 }
@@ -130,17 +109,7 @@ public class AgentController {
                 .findFirst();
         if (find.isPresent()) {
             RuleEntity re = find.get();
-            String agentID = String.valueOf(te.getPid());
             if (weaving.detachRule(te, new String[] { re.getName() })) {
-                if (re.getName().endsWith("STD")) {
-                    log.info("::agent controller::detach rule:" + rulename);
-                    StandardMetricCollector stdCollector = StandardMetricCollector.getInstance(agentID);
-                    stdCollector.removeRule(re.getName());
-                    if(stdCollector.isRuleEmpty()) {
-                        log.info("::agent controller::remove listener:" + stdCollector.getName());
-                        WebSocketFacade.removeListener(agentID, stdCollector);
-                    }
-                } 
                 return "rule detached successfully";
             }
         }

@@ -123,9 +123,10 @@ public class WebSocketFacade {
         // avoid dup
         if (cbs.indexOf(callback) != -1) {
             log.info(String.format("listner:%s is ALREADY registered for agent:%s", callback.getName(), agentID));
+            return;
         }
-        cbs.add(callback);
 
+        cbs.add(callback);
         // manage the case when ws is up
         WebSocketFacade wsf = clients.get(agentID);
         if (wsf != null && wsf.listeners.indexOf(callback) == -1) {

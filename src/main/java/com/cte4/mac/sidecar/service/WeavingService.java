@@ -6,12 +6,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import com.sun.tools.attach.*;
-
+import com.cte4.mac.sidecar.exposer.FunctionMetricCollector;
+import com.cte4.mac.sidecar.exposer.PrometheusExposer;
+import com.cte4.mac.sidecar.exposer.StandardMetricCollector;
 import com.cte4.mac.sidecar.model.RuleEntity;
 import com.cte4.mac.sidecar.model.TargetEntity;
 
 import org.jboss.byteman.agent.install.Install;
 import org.jboss.byteman.agent.submit.Submit;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
@@ -27,6 +30,9 @@ public class WeavingService {
 
     @Value("${agent.port.range}")
     String portRange;
+
+    @Autowired
+    PrometheusExposer pExposer;
 
     /**
      * Attach the monitoring agent
@@ -140,12 +146,53 @@ public class WeavingService {
             ByteArrayInputStream is = new ByteArrayInputStream(re.getScript().getBytes());
             String result = submit.addRulesFromResources(Arrays.asList(is));
             te.addRule(re.clone());
+            applyListener(te, re);
             log.info(String.format("rule applied, result:%s", result));
         } catch (Exception e) {
             log.error(String.format("fail to apply the rule for target:%s", te), e);
             throw new RuleInjectionException(e);
         }
         return true;
+    }
+
+    public void applyListener(TargetEntity te, RuleEntity re) {
+        String rulename = re.getName();
+        String agentID = String.valueOf(te.getPid());
+        if (rulename.endsWith("FNC")) {
+            log.info("::agent controller::apply function rule:" + rulename);
+            FunctionMetricCollector fcCollector = FunctionMetricCollector.getInstance(agentID);
+            fcCollector.addRule(rulename);
+            fcCollector.register(pExposer.getRegistry());
+            WebSocketFacade.registerListener(agentID, fcCollector);
+        } else if (rulename.endsWith("STD")) {
+            log.info("::agent controller::apply standard rule:" + rulename);
+            StandardMetricCollector stdCollector = StandardMetricCollector.getInstance(agentID);
+            stdCollector.addRule(rulename);
+            stdCollector.register(pExposer.getRegistry());
+            WebSocketFacade.registerListener(agentID, stdCollector);
+        } 
+    }
+
+    public void detachListener(TargetEntity te, RuleEntity re) {
+        String rulename = re.getName();
+        String agentID = String.valueOf(te.getPid()); 
+        if (rulename.endsWith("STD")) {
+            log.info("::agent controller::detach rule:" + rulename);
+            StandardMetricCollector stdCollector = StandardMetricCollector.getInstance(agentID);
+            stdCollector.removeRule(rulename);
+            if(stdCollector.isRuleEmpty()) {
+                log.info("::agent controller::remove listener:" + stdCollector.getName());
+                WebSocketFacade.removeListener(agentID, stdCollector);
+            }
+        }
+        if (rulename.endsWith("FNC")) {
+            FunctionMetricCollector fncCollector = FunctionMetricCollector.getInstance(agentID);
+            fncCollector.removeRule(rulename);
+            if(fncCollector.isRuleEmpty()) {
+                log.info("::agent controller::remove listener:" + fncCollector.getName());
+                WebSocketFacade.removeListener(agentID, fncCollector);
+            }
+        }
     }
 
     /**
@@ -188,10 +235,12 @@ public class WeavingService {
                             Arrays.asList(new ByteArrayInputStream(re.getScript().getBytes())));
                     te.delRule(re);
                     log.info(String.format("rule[%s] applied, result:%s", re.getName(), result));
+                    detachListener(te, re);
                 }
             }
         } catch (Exception e) {
             log.error("fail to detach the rule", e);
+            return false;
         }
         return true;
     }

@@ -19,6 +19,7 @@ public class FunctionMetricCollector extends Collector implements MetricsCallbac
 
     private static Map<String, FunctionMetricCollector> fcRegisery = new ConcurrentHashMap<>();
     private String agentID;
+    List<String> fncRules = new ArrayList<>();
 
     private FunctionMetricCollector(String agentID) {
         this.agentID = agentID;
@@ -88,6 +89,18 @@ public class FunctionMetricCollector extends Collector implements MetricsCallbac
 
     public String getAgentID() {
         return agentID;
+    }
+
+    public void addRule(String rule) {
+        fncRules.add(rule);
+    }
+
+    public void removeRule(String rule) {
+        fncRules.remove(rule);
+    }
+
+    public boolean isRuleEmpty() {
+        return fncRules.size() == 0;
     }
 
 }

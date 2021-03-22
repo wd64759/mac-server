@@ -3,6 +3,7 @@ package com.cte4.mac.sidecar.service;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
@@ -12,7 +13,6 @@ import com.cte4.mac.sidecar.model.RuleEntity;
 import com.cte4.mac.sidecar.model.TargetEntity;
 import com.cte4.mac.sidecar.repos.MetricRepository;
 import com.cte4.mac.sidecar.utils.MonitorUtil;
-import com.google.common.base.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -84,7 +84,14 @@ public class HealthService {
                                     });
                                 }
                             } else {
-                                log.warn("disable the agent for proc as it's unreachable:" + te);
+                                String rulename = "MACHEALTH_FNC";
+                                Optional<RuleEntity> find = mRepo.getRules().stream()
+                                        .filter(rule -> rule.getName().equals(rulename)).findFirst();
+                                if (find.isPresent()) {
+                                    RuleEntity re = find.get().clone();
+                                    weaving.applyListener(te, re);
+                                    te.addRule(re);
+                                }
                                 te.setDisabled(true);
                             }
                         }
