@@ -6,10 +6,20 @@ import java.util.stream.Collectors;
 
 import com.cte4.mac.sidecar.model.RuleEntity;
 import com.cte4.mac.sidecar.model.TargetEntity;
+import com.cte4.mac.sidecar.model.annotation.AttributeDescriptor;
+import com.cte4.mac.sidecar.model.annotation.ClassDescriptor;
+import com.cte4.mac.sidecar.model.annotation.ElementDescriptor;
+import com.cte4.mac.sidecar.model.annotation.MethodDescriptor;
+import com.cte4.mac.sidecar.model.annotation.ModuleDescriptor;
+import com.cte4.mac.sidecar.model.annotation.ParameterDescriptor;
 import com.cte4.mac.sidecar.repos.MetricRepository;
+import com.cte4.mac.sidecar.rule.RuleManager;
 import com.cte4.mac.sidecar.service.AgentAttachException;
 import com.cte4.mac.sidecar.service.RuleInjectionException;
 import com.cte4.mac.sidecar.service.WeavingService;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.typeadapters.RuntimeTypeAdapterFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,6 +42,9 @@ public class AgentController {
 
     @Autowired
     WeavingService weaving;
+
+    @Autowired
+    RuleManager ruleMgr;
 
     @ApiOperation(value = "list all rules", notes = "here is notes")
     @GetMapping(value = "/rules")
@@ -73,7 +86,31 @@ public class AgentController {
     @PostMapping(value = "/targets/{pid}")
     public void setTarget(@PathVariable String pid, String attribute, String value) {
         TargetEntity te = repo.getTarget(pid);
-        te.getAttributes().put(attribute, value);
+        // te.setAttribute(attribute, value);
+        if ("mac.init.ruleCfg".equals(attribute)) {
+            ModuleDescriptor md = parseRuleAnnotation(value);
+            List<RuleEntity> rules = ruleMgr.buildRules(md);
+            rules.forEach(ruleEntity -> {
+                try {
+                    weaving.applyRule(te, ruleEntity);
+                    te.addRule(ruleEntity);
+                } catch (RuleInjectionException e) {
+                    log.error("fail to apply rule:" + ruleEntity, e);
+                }
+            });
+        }
+    }
+
+    protected ModuleDescriptor parseRuleAnnotation(String annotationCfg) {
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapterFactory(
+                        RuntimeTypeAdapterFactory.of(ElementDescriptor.class).registerSubtype(ModuleDescriptor.class)
+                                .registerSubtype(ClassDescriptor.class).registerSubtype(MethodDescriptor.class)
+                                .registerSubtype(AttributeDescriptor.class).registerSubtype(ParameterDescriptor.class))
+                .disableHtmlEscaping().create();
+        ModuleDescriptor md = gson.fromJson(annotationCfg, ModuleDescriptor.class);
+        // log.info(gson.toJson(md));
+        return md;
     }
 
     @ApiOperation(value = "apply rule against target process")

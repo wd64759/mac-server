@@ -1,9 +1,7 @@
 package com.cte4.mac.sidecar.model;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import lombok.Data;
@@ -11,7 +9,7 @@ import lombok.Getter;
 import lombok.ToString;
 
 @Data
-@ToString(exclude = {"attributes", "rules"})
+@ToString(exclude = {"rules"})
 public class TargetEntity {
 
     public TargetEntity(String pid) throws IllegalArgumentException {
@@ -25,9 +23,6 @@ public class TargetEntity {
     private boolean disabled;
     private String agentPort;
     // pid, attached, uptime
-    @Getter
-    private Map<String, String> attributes = new HashMap<String, String>();
-    // rules applied
     @Getter
     private List<RuleEntity> rules = new ArrayList<>();
 
@@ -47,5 +42,9 @@ public class TargetEntity {
                 return re;
         }
         return null;
+    }
+
+    public void setAttribute(String name, String value) {
+        // TODO: 
     }
 }

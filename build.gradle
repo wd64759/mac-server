@@ -29,7 +29,10 @@ dependencies {
 	compile 'javax.websocket:javax.websocket-api:1.1'
 	compile 'org.springframework:spring-websocket:5.2.0.RELEASE'
 	compile 'com.google.code.gson:gson:2.8.0'
+	compile 'org.danilopianini:gson-extras:0.2.2'
+	compile 'org.freemarker:freemarker:2.3.31'
 	
+	// https://mvnrepository.com/artifact/org.freemarker/freemarker
 	// implementation files('/home/wei/jdk1.8.0_212/lib/tools.jar')
 	// implementation files('/home/wei/jdk-11.0.7/lib/jrt-fs.jar')
 	// compile(files(((URLClassLoader) ToolProvider.getSystemToolClassLoader()).getURLs()))
