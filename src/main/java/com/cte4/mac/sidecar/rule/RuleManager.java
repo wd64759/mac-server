@@ -11,6 +11,7 @@ import com.cte4.mac.sidecar.model.annotation.ElementDescriptor;
 import com.cte4.mac.sidecar.model.annotation.MethodDescriptor;
 import com.cte4.mac.sidecar.model.annotation.ModuleDescriptor;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.log4j.Log4j2;
@@ -19,12 +20,8 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class RuleManager {
 
+    @Autowired
     public List<RuleTplProcessor> ruleTplRegistery = new ArrayList<>();
-
-    @PostConstruct
-    protected void loadTemplates() {
-        ruleTplRegistery.add(new CountedRuleTpl());
-    }
 
     public List<RuleEntity> buildRules(ModuleDescriptor md) {
         List<RuleEntity> rules = new ArrayList<>();
